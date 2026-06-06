@@ -9,8 +9,8 @@ import spacy
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple
-from sklearn.feature_extraction.text import TfidfVectorizer  # TF‑IDF vectorizer [web:291]
-from sklearn.linear_model import LogisticRegression          # Logistic Regression classifier [web:292]
+from sklearn.feature_extraction.text import TfidfVectorizer  # [web:291]
+from sklearn.linear_model import LogisticRegression          # [web:292]
 from sklearn.model_selection import train_test_split
 
 # --------------------------------------------------------------------
@@ -172,7 +172,7 @@ def train_classifier() -> Tuple[TfidfVectorizer, LogisticRegression, float]:
     )
 
     vectorizer = TfidfVectorizer(
-        stop_words="english",  # built-in English stopwords [web:291]
+        stop_words="english",          # built-in English stopwords [web:291]
         max_features=500,
         ngram_range=(1, 2),
     )
@@ -180,12 +180,11 @@ def train_classifier() -> Tuple[TfidfVectorizer, LogisticRegression, float]:
     X_train_tfidf = vectorizer.fit_transform(X_train)
     X_test_tfidf = vectorizer.transform(X_test)
 
+    # Simpler config for cloud compatibility: let sklearn choose solver/multi_class [web:292][web:294]
     clf = LogisticRegression(
         max_iter=1000,
-        multi_class="multinomial",
-        solver="lbfgs",
         random_state=42,
-    )  # multinomial LR for multi-class classification [web:292][web:294]
+    )
 
     clf.fit(X_train_tfidf, y_train)
     accuracy = clf.score(X_test_tfidf, y_test)
@@ -396,7 +395,7 @@ if st.button("🔍 Analyze", use_container_width=True):
         # ==========================
         with st.expander("ℹ️ Classifier details and training data"):
             st.markdown(
-                "**Classifier:** TF‑IDF (1‑2 grams, 500 features) + multinomial Logistic Regression."
+                "**Classifier:** TF‑IDF (1‑2 grams, 500 features) + Logistic Regression."
             )
             st.markdown(f"**Test accuracy on internal examples:** `{test_accuracy:.2f}`")
             st.markdown(
