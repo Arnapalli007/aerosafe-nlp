@@ -9,6 +9,10 @@ import spacy
 import numpy as np
 from dataclasses import dataclass
 from typing import List, Tuple
+
+import pandas as pd            # for CSV upload [web:311][web:317]
+import PyPDF2                  # for PDF text extraction [web:316][web:326]
+
 from sklearn.feature_extraction.text import TfidfVectorizer  # [web:291]
 from sklearn.linear_model import LogisticRegression          # [web:292]
 from sklearn.model_selection import train_test_split
@@ -229,7 +233,7 @@ with st.sidebar:
     st.markdown("✅ Keyword Extraction")
     st.markdown("✅ Word Frequency Chart")
     st.markdown("✅ Text Preprocessing")
-    st.markdown("✅ File Upload (.txt)")
+    st.markdown("✅ File Upload (.txt / .csv / .pdf)")
     st.markdown("✅ Named Entity Recognition")
     st.markdown("---")
     st.markdown("*Built by Gayatri Naidu*")
@@ -239,27 +243,63 @@ st.title("✈ AeroSafe NLP Prototype")
 st.write("Analyze aviation safety reports using Natural Language Processing.")
 
 # --------------------------------------------------------------------
-# 4. INPUT SECTION
+# 4. INPUT SECTION (TEXT / TXT / CSV / PDF)
 # --------------------------------------------------------------------
 st.markdown("### 📂 Input Text")
 input_method = st.radio(
-    "Choose input method:", ["Type / Paste text", "Upload a .txt file"], horizontal=True
+    "Choose input method:",
+    ["Type / Paste text", "Upload a .txt file", "Upload a .csv file", "Upload a .pdf file"],
+    horizontal=True,
 )
 
 user_text = ""
+
 if input_method == "Type / Paste text":
     user_text = st.text_area(
         "📝 Enter text to analyze:",
         height=150,
         placeholder="e.g. Boeing reported a safety incident at London Heathrow on Monday...",
     )
-else:
+
+elif input_method == "Upload a .txt file":
     uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
     if uploaded_file is not None:
         user_text = uploaded_file.read().decode("utf-8")
         st.success(f"✅ File loaded: **{uploaded_file.name}** ({len(user_text)} characters)")
         st.text_area(
             "📄 File content preview:",
+            value=user_text[:500] + ("..." if len(user_text) > 500 else ""),
+            height=150,
+            disabled=True,
+        )
+
+elif input_method == "Upload a .csv file":
+    uploaded_file = st.file_uploader("Upload a .csv file", type=["csv"])
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)  # pandas reads directly from UploadedFile [web:311][web:317]
+        st.success(f"✅ CSV loaded: **{uploaded_file.name}** ({len(df)} rows)")
+        text_column = st.selectbox("Select the column with report text:", df.columns)
+        # Combine selected column into one text block
+        user_text = "\n".join(df[text_column].astype(str).tolist())
+        st.text_area(
+            "📄 Sample of combined text:",
+            value=user_text[:500] + ("..." if len(user_text) > 500 else ""),
+            height=150,
+            disabled=True,
+        )
+
+elif input_method == "Upload a .pdf file":
+    uploaded_file = st.file_uploader("Upload a .pdf file", type=["pdf"])
+    if uploaded_file is not None:
+        reader = PyPDF2.PdfReader(uploaded_file)  # [web:316][web:326]
+        text_chunks = []
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            text_chunks.append(page_text)
+        user_text = "\n".join(text_chunks)
+        st.success(f"✅ PDF loaded: **{uploaded_file.name}**")
+        st.text_area(
+            "📄 Extracted text preview:",
             value=user_text[:500] + ("..." if len(user_text) > 500 else ""),
             height=150,
             disabled=True,
